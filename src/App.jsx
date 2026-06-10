@@ -1,4 +1,5 @@
 import "./App.css";
+import { useState } from "react";
 
 import {
   Chart as ChartJS,
@@ -18,6 +19,44 @@ ChartJS.register(
 );
 
 function App() {
+  const [alertActive, setAlertActive] = useState(false);
+
+  const [alertHistory, setAlertHistory] = useState([
+    "12:10 PM - PEEP warning detected",
+    "12:15 PM - HR elevated above safe range",
+    "12:20 PM - FiO₂ warning detected",
+    "12:25 PM - RR exceeded threshold",
+  ]);
+
+  const simulateAlert = () => {
+    setAlertActive(true);
+
+    const currentAlert = "12:30 PM - SpO₂ dropped to 84%";
+
+    setAlertHistory((prev) => [
+      currentAlert,
+      ...prev.slice(0, 4),
+    ]);
+
+    // Browser Notification
+    if ("Notification" in window) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          new Notification("🚨 ICU Alert", {
+            body: "SpO₂ dropped below safe threshold (84%)",
+          });
+        }
+      });
+    }
+
+    // Browser Beep Sound
+    const audio = new Audio(
+      "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
+    );
+
+    audio.play();
+  };
+
   const spo2Data = {
     labels: ["10s", "8s", "6s", "4s", "2s", "Now"],
     datasets: [
@@ -55,28 +94,46 @@ function App() {
     <div className="app">
       <h1>ICU Remote Monitoring</h1>
 
+      <button
+        onClick={simulateAlert}
+        style={{
+          padding: "12px 20px",
+          background: "#dc2626",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: "bold",
+          marginBottom: "20px",
+        }}
+      >
+        🚨 Simulate Alert
+      </button>
+
       <div className="header">
         <h3>Patient: Demo Patient</h3>
         <p>Bed: ICU-03</p>
-        <p>Status: Critical 🔴</p>
+        <p>Status: {alertActive ? "Critical 🔴" : "Stable 🟢"}</p>
       </div>
 
-      <div className="alert-banner">
-        <h2>🚨 CRITICAL ALERT</h2>
-        <p>SpO₂ below safe threshold</p>
-        <p>Current Value: 84%</p>
-        <p>Time: 12:30 PM</p>
-      </div>
+      {alertActive && (
+        <div className="alert-banner">
+          <h2>🚨 CRITICAL ALERT</h2>
+          <p>SpO₂ below safe threshold</p>
+          <p>Current Value: 84%</p>
+          <p>Time: 12:30 PM</p>
+        </div>
+      )}
 
       <hr />
 
       <h2>Vitals</h2>
 
       <div className="vitals-grid">
-        <div className="card critical">
+        <div className={`card ${alertActive ? "critical" : "green"}`}>
           <h3>SpO₂</h3>
-          <p>84%</p>
-          <p>Critical</p>
+          <p>{alertActive ? "84%" : "98%"}</p>
+          <p>{alertActive ? "Critical" : "Normal"}</p>
         </div>
 
         <div className="card green">
@@ -119,11 +176,11 @@ function App() {
       </div>
 
       <div className="section">
-        <h2>🚨 Active Alerts</h2>
+        <h2>🚨 Alert History</h2>
 
-        <p>• SpO₂ dropped below threshold (84%)</p>
-        <p>• Alert triggered at 12:30 PM</p>
-        <p>• Clinical attention required</p>
+        {alertHistory.map((alert, index) => (
+          <p key={index}>• {alert}</p>
+        ))}
       </div>
 
       <div className="section">
@@ -157,6 +214,12 @@ function App() {
         <p>• Verify oxygen delivery</p>
         <p>• Check patient positioning</p>
         <p>• Continue close monitoring</p>
+
+        <p>
+          <strong>
+            ⚠️ AI Suggestion Only – Verify with attending physician.
+          </strong>
+        </p>
       </div>
     </div>
   );
