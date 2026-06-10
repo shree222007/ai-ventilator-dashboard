@@ -19,6 +19,11 @@ ChartJS.register(
 );
 
 function App() {
+  const role =
+    new URLSearchParams(window.location.search).get("role") || "doctor";
+
+  const isDoctor = role === "doctor";
+
   const [alertActive, setAlertActive] = useState(false);
 
   const [alertHistory, setAlertHistory] = useState([
@@ -149,6 +154,13 @@ function App() {
         <h3>Patient: Demo Patient</h3>
         <p>Bed: ICU-03</p>
         <p>Status: {alertActive ? "Critical 🔴" : "Stable 🟢"}</p>
+        <p>
+          Current Role:
+          <strong>
+            {" "}
+            {isDoctor ? "Doctor 👨‍⚕️" : "Nurse 👩‍⚕️"}
+          </strong>
+        </p>
       </div>
 
       {alertActive && (
@@ -174,31 +186,26 @@ function App() {
         <div className="card green">
           <h3>HR</h3>
           <p>75 bpm</p>
-          <p>Normal</p>
         </div>
 
         <div className="card green">
           <h3>RR</h3>
           <p>18 bpm</p>
-          <p>Normal</p>
         </div>
 
         <div className="card green">
           <h3>FiO₂</h3>
           <p>40%</p>
-          <p>Normal</p>
         </div>
 
         <div className="card green">
           <h3>PEEP</h3>
           <p>5 cmH₂O</p>
-          <p>Normal</p>
         </div>
 
         <div className="card green">
           <h3>Tidal Volume</h3>
           <p>500 mL</p>
-          <p>Normal</p>
         </div>
       </div>
 
@@ -221,39 +228,41 @@ function App() {
       <div className="section">
         <h2>💬 Doctor / Nurse Chat</h2>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            marginBottom: "20px",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Type instruction..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+        {isDoctor && (
+          <div
             style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: "8px",
-            }}
-          />
-
-          <button
-            onClick={sendMessage}
-            style={{
-              padding: "12px 20px",
-              background: "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
+              display: "flex",
+              gap: "10px",
+              marginBottom: "20px",
             }}
           >
-            Send
-          </button>
-        </div>
+            <input
+              type="text"
+              placeholder="Type instruction..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+              }}
+            />
+
+            <button
+              onClick={sendMessage}
+              style={{
+                padding: "12px 20px",
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+              }}
+            >
+              Send
+            </button>
+          </div>
+        )}
 
         <div className="chat-container">
           {messages.map((msg, index) => (
