@@ -28,6 +28,44 @@ function App() {
     "12:25 PM - RR exceeded threshold",
   ]);
 
+  const [message, setMessage] = useState("");
+
+  const [messages, setMessages] = useState([
+    {
+      role: "Doctor",
+      text: "Check airway and oxygen delivery.",
+      time: "12:25 PM",
+    },
+    {
+      role: "Nurse",
+      text: "Acknowledged. Assessing patient.",
+      time: "12:26 PM",
+    },
+    {
+      role: "Doctor",
+      text: "Update me in 5 minutes.",
+      time: "12:27 PM",
+    },
+  ]);
+
+  const sendMessage = () => {
+    if (!message.trim()) return;
+
+    const currentTime = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const newMessage = {
+      role: "Doctor",
+      text: message,
+      time: currentTime,
+    };
+
+    setMessages([newMessage, ...messages]);
+    setMessage("");
+  };
+
   const simulateAlert = () => {
     setAlertActive(true);
 
@@ -38,7 +76,6 @@ function App() {
       ...prev.slice(0, 4),
     ]);
 
-    // Browser Notification
     if ("Notification" in window) {
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
@@ -49,7 +86,6 @@ function App() {
       });
     }
 
-    // Browser Beep Sound
     const audio = new Audio(
       "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
     );
@@ -61,7 +97,6 @@ function App() {
     labels: ["10s", "8s", "6s", "4s", "2s", "Now"],
     datasets: [
       {
-        label: "SpO₂",
         data: [98, 97, 96, 94, 90, 84],
         borderColor: "white",
         borderWidth: 3,
@@ -186,18 +221,57 @@ function App() {
       <div className="section">
         <h2>💬 Doctor / Nurse Chat</h2>
 
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            marginBottom: "20px",
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Type instruction..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "8px",
+            }}
+          />
+
+          <button
+            onClick={sendMessage}
+            style={{
+              padding: "12px 20px",
+              background: "#2563eb",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Send
+          </button>
+        </div>
+
         <div className="chat-container">
-          <div className="doctor-msg">
-            Doctor: Check airway and oxygen delivery.
-          </div>
-
-          <div className="nurse-msg">
-            Nurse: Acknowledged. Assessing patient.
-          </div>
-
-          <div className="doctor-msg">
-            Doctor: Update me in 5 minutes.
-          </div>
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={
+                msg.role === "Doctor"
+                  ? "doctor-msg"
+                  : "nurse-msg"
+              }
+            >
+              <strong>{msg.role}</strong>
+              <br />
+              {msg.text}
+              <br />
+              <small>{msg.time}</small>
+            </div>
+          ))}
         </div>
       </div>
 
