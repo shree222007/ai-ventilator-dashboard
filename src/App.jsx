@@ -1,6 +1,9 @@
 import "./App.css";
 import { useState } from "react";
 
+import patients from "./data/patients";
+import PatientList from "./components/PatientList";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,6 +26,8 @@ function App() {
     new URLSearchParams(window.location.search).get("role") || "doctor";
 
   const isDoctor = role === "doctor";
+
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   const [alertActive, setAlertActive] = useState(false);
 
@@ -102,7 +107,14 @@ function App() {
     labels: ["10s", "8s", "6s", "4s", "2s", "Now"],
     datasets: [
       {
-        data: [98, 97, 96, 94, 90, 84],
+        data: [
+          selectedPatient?.spo2 + 2,
+          selectedPatient?.spo2 + 1,
+          selectedPatient?.spo2,
+          selectedPatient?.spo2 - 1,
+          selectedPatient?.spo2 - 2,
+          alertActive ? 84 : selectedPatient?.spo2,
+        ],
         borderColor: "white",
         borderWidth: 3,
         tension: 0.4,
@@ -130,149 +142,133 @@ function App() {
     },
   };
 
+  if (!selectedPatient) {
+    return (
+      <PatientList
+        onSelectPatient={setSelectedPatient}
+      />
+    );
+  }
+
   return (
     <div className="app">
-      <h1>ICU Remote Monitoring</h1>
+      <div className="header">
+        <h1>🏥 AI ICU Remote Monitoring Dashboard</h1>
+        <h2>
+          {selectedPatient.name} | {selectedPatient.bed}
+        </h2>
+
+        <p>
+          Status: <strong>{selectedPatient.status}</strong>
+        </p>
+
+        <button
+          onClick={() => {
+            setSelectedPatient(null);
+            setAlertActive(false);
+          }}
+          style={{ marginTop: "10px" }}
+        >
+          ← Back to Patient List
+        </button>
+      </div>
+
+      {alertActive && (
+        <div className="alert-banner">
+          🚨 CRITICAL ALERT — SpO₂ dropped below safe threshold!
+        </div>
+      )}
 
       <button
         onClick={simulateAlert}
         style={{
-          padding: "12px 20px",
-          background: "#dc2626",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "bold",
+          width: "100%",
+          padding: "15px",
           marginBottom: "20px",
+          fontSize: "18px",
+          cursor: "pointer",
         }}
       >
         🚨 Simulate Alert
       </button>
 
-      <div className="header">
-        <h3>Patient: Demo Patient</h3>
-        <p>Bed: ICU-03</p>
-        <p>Status: {alertActive ? "Critical 🔴" : "Stable 🟢"}</p>
-        <p>
-          Current Role:
-          <strong>
-            {" "}
-            {isDoctor ? "Doctor 👨‍⚕️" : "Nurse 👩‍⚕️"}
-          </strong>
-        </p>
-      </div>
-
-      {alertActive && (
-        <div className="alert-banner">
-          <h2>🚨 CRITICAL ALERT</h2>
-          <p>SpO₂ below safe threshold</p>
-          <p>Current Value: 84%</p>
-          <p>Time: 12:30 PM</p>
-        </div>
-      )}
-
-      <hr />
-
-      <h2>Vitals</h2>
-
       <div className="vitals-grid">
-        <div className={`card ${alertActive ? "critical" : "green"}`}>
+        <div className={alertActive ? "card critical" : "card green"}>
           <h3>SpO₂</h3>
-          <p>{alertActive ? "84%" : "98%"}</p>
-          <p>{alertActive ? "Critical" : "Normal"}</p>
+
+          <h1>{alertActive ? 84 : selectedPatient.spo2}%</h1>
+
+          <div className="chart-container">
+            <Line
+              data={spo2Data}
+              options={chartOptions}
+            />
+          </div>
         </div>
 
         <div className="card green">
-          <h3>HR</h3>
-          <p>75 bpm</p>
+          <h3>Heart Rate</h3>
+
+          <h1>{selectedPatient.hr} bpm</h1>
         </div>
 
         <div className="card green">
-          <h3>RR</h3>
-          <p>18 bpm</p>
+          <h3>Respiratory Rate</h3>
+
+          <h1>{selectedPatient.rr} bpm</h1>
         </div>
 
         <div className="card green">
           <h3>FiO₂</h3>
-          <p>40%</p>
+
+          <h1>{selectedPatient.fio2}%</h1>
         </div>
 
         <div className="card green">
           <h3>PEEP</h3>
-          <p>5 cmH₂O</p>
+
+          <h1>{selectedPatient.peep} cmH₂O</h1>
         </div>
 
         <div className="card green">
           <h3>Tidal Volume</h3>
-          <p>500 mL</p>
+
+          <h1>{selectedPatient.tidalVolume} mL</h1>
         </div>
       </div>
 
       <div className="section">
-        <h2>📈 Vital Trends</h2>
+        <h2>🤖 AI Recommendation</h2>
 
-        <div className="chart-container">
-          <Line data={spo2Data} options={chartOptions} />
-        </div>
+        {alertActive ? (
+          <p>
+            Increase oxygen support immediately, inspect airway patency,
+            verify ventilator tubing, assess patient clinically, and
+            notify the intensivist if SpO₂ does not recover.
+          </p>
+        ) : (
+          <p>
+            Patient is currently stable. Continue routine monitoring.
+          </p>
+        )}
       </div>
 
       <div className="section">
         <h2>🚨 Alert History</h2>
 
-        {alertHistory.map((alert, index) => (
-          <p key={index}>• {alert}</p>
+        {alertHistory.map((item, index) => (
+          <p key={index}>{item}</p>
         ))}
       </div>
 
       <div className="section">
-        <h2>💬 Doctor / Nurse Chat</h2>
-
-        {isDoctor && (
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Type instruction..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "12px",
-                borderRadius: "8px",
-              }}
-            />
-
-            <button
-              onClick={sendMessage}
-              style={{
-                padding: "12px 20px",
-                background: "#2563eb",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              Send
-            </button>
-          </div>
-        )}
+        <h2>💬 {isDoctor ? "Doctor Console" : "Nurse Console"}</h2>
 
         <div className="chat-container">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={
-                msg.role === "Doctor"
-                  ? "doctor-msg"
-                  : "nurse-msg"
-              }
+              className={msg.role === "Doctor" ? "doctor-msg" : "nurse-msg"}
             >
               <strong>{msg.role}</strong>
               <br />
@@ -282,27 +278,48 @@ function App() {
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="section">
-        <h2>🤖 AI Recommendation</h2>
+        {isDoctor && (
+          <>
+            <textarea
+              rows={3}
+              placeholder="Type an instruction for the nurse..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              style={{
+                width: "100%",
+                marginTop: "15px",
+                padding: "10px",
+                fontSize: "16px",
+              }}
+            />
 
-        <p>Patient SpO₂ has fallen below safe threshold.</p>
+            <button
+              onClick={sendMessage}
+              style={{
+                marginTop: "10px",
+                width: "100%",
+                padding: "12px",
+                fontSize: "16px",
+                cursor: "pointer",
+              }}
+            >
+              Send Instruction
+            </button>
+          </>
+        )}
 
-        <p>
-          <strong>Suggested Actions:</strong>
-        </p>
-
-        <p>• Assess airway patency</p>
-        <p>• Verify oxygen delivery</p>
-        <p>• Check patient positioning</p>
-        <p>• Continue close monitoring</p>
-
-        <p>
-          <strong>
-            ⚠️ AI Suggestion Only – Verify with attending physician.
-          </strong>
-        </p>
+        {!isDoctor && (
+          <p
+            style={{
+              marginTop: "15px",
+              color: "#94a3b8",
+              textAlign: "center",
+            }}
+          >
+            Nurse view is read-only. Await doctor's instructions.
+          </p>
+        )}
       </div>
     </div>
   );
